@@ -12,3 +12,13 @@ target/
 # Logs
 *.log
 logs/
+
+# Eclipse
+.classpath
+.project
+.settings/
+
+# Arquivos locais
+.configurações/
+lixeira/
+.caminho_da_fábrica
