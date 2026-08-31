@@ -1,0 +1,8 @@
+# Arquivos que NAO precisam entrar na caixa Docker (deixa o build mais rapido)
+target/
+*.iml
+.idea/
+.vscode/
+.git/
+.gitignore
+*.md

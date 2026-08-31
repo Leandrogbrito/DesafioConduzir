@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Onde colocar: src/main/resources/logback-spring.xml
+    (arquivo NOVO, na mesma pasta do application.properties)
+
+    Este arquivo ensina o Spring Boot a escrever logs em DOIS formatos ao
+    mesmo tempo:
+      1) CONSOLE - formato colorido e legivel (para voce ver no Eclipse)
+      2) ARQUIVO - formato JSON estruturado (para ferramentas de monitoramento,
+         como AWS CloudWatch, lerem e conseguirem filtrar/buscar)
+-->
+<configuration>
+
+    <!-- Le as configuracoes padrao do Spring Boot (cores, etc.) -->
+    <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+
+    <!-- ============ APPENDER 1: CONSOLE (leitura humana) ============ -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss} %highlight(%-5level) [%thread] %cyan(%logger{36}) - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- ============ APPENDER 2: ARQUIVO JSON (logs estruturados) ============ -->
+    <appender name="JSON_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>logs/conduzir-app.json.log</file>
+
+        <!-- Cria um arquivo novo por dia, mantendo os ultimos 7 dias -->
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>logs/conduzir-app.%d{yyyy-MM-dd}.json.log</fileNamePattern>
+            <maxHistory>7</maxHistory>
+        </rollingPolicy>
+
+        <!-- Formata cada linha de log como um objeto JSON -->
+        <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+            <customFields>{"aplicacao":"conduzir-backend"}</customFields>
+        </encoder>
+    </appender>
+
+    <!-- Liga os dois "appenders" (console + arquivo JSON) para TODOS os logs -->
+    <root level="INFO">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="JSON_FILE"/>
+    </root>
+
+    <!-- Deixa os logs do SEU codigo (com dados de negocio) em modo DEBUG -->
+    <logger name="com.montadora.gestao" level="DEBUG"/>
+
+</configuration>

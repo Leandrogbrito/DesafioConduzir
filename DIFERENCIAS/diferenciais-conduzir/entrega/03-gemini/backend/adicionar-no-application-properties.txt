@@ -1,0 +1,28 @@
+Adicione estas linhas no seu application.properties (desenvolvimento local):
+
+# ===== Gemini (IA de recomendacao) =====
+# Se deixar em branco, a aplicacao funciona normalmente
+# usando o resumo local (sem IA) como fallback.
+gemini.api.key=${GEMINI_API_KEY:}
+
+------------------------------------------------------------
+
+Para RODAR LOCALMENTE (fora do Docker) com a chave do Gemini,
+tem 2 opcoes:
+
+OPCAO A) Colar a chave direto (mais simples para teste rapido):
+
+gemini.api.key=AIzaSyXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+
+(NAO suba isso para o GitHub! So para testar na sua maquina.)
+
+OPCAO B) Variavel de ambiente (mais seguro, recomendado):
+
+No Eclipse:
+1. Botao direito no projeto -> Run As -> Run Configurations...
+2. Aba "Environment" -> Add...
+3. Name: GEMINI_API_KEY
+   Value: (cole sua chave aqui)
+4. Apply -> Run
+
+Assim a chave fica FORA do codigo (boa pratica de seguranca).

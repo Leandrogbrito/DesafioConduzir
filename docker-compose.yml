@@ -1,0 +1,59 @@
+# ============================================================
+# DOCKER COMPOSE - sobe Backend + Frontend + PostgreSQL juntos
+# Local exato: DesafioConduzir/docker-compose.yml
+# (na RAIZ do projeto, ao lado das pastas gestao-veiculos-backend/ e conduzir-frontend/)
+#
+# Como rodar:  docker compose up --build
+# Como parar:  docker compose down
+# ============================================================
+
+services:
+
+  # ---------- BANCO DE DADOS ----------
+  postgres:
+    image: postgres:17-alpine
+    container_name: conduzir-db
+    environment:
+      POSTGRES_DB: conduzir
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - conduzir_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # ---------- BACKEND (Spring Boot) ----------
+  backend:
+    build:
+      context: ./gestao-veiculos-backend/desafio
+    container_name: conduzir-backend
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/conduzir
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+      # Se for usar o diferencial de IA com Gemini, descomente e cole sua chave:
+      # GEMINI_API_KEY: "SUA_CHAVE_AQUI"
+
+  # ---------- FRONTEND (React) ----------
+  frontend:
+    build:
+      context: ./conduzir-frontend/conduzir-frontend
+    container_name: conduzir-frontend
+    depends_on:
+      - backend
+    ports:
+      - "5173:80"
+
+volumes:
+  conduzir_pgdata:

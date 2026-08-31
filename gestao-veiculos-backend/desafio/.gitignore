@@ -1,0 +1,14 @@
+# Compilados do Maven
+target/
+
+# IDEs
+.idea/
+*.iml
+.vscode/
+
+# Sistema
+.DS_Store
+
+# Logs
+*.log
+logs/

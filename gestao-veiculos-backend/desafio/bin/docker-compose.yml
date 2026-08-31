@@ -1,0 +1,48 @@
+# ============================================================
+# DOCKER COMPOSE = o "maestro" que sobe VARIAS caixas juntas
+# e faz elas conversarem: o banco (postgres) + a aplicacao (app).
+# Rode tudo com: docker compose up --build
+# ============================================================
+
+services:
+
+  # ---------- CAIXA 1: BANCO DE DADOS ----------
+  db:
+    image: postgres:16-alpine        # imagem pronta do PostgreSQL
+    container_name: gestao-db
+    environment:
+      POSTGRES_DB: gestaodb          # nome do banco
+      POSTGRES_USER: postgres        # usuario
+      POSTGRES_PASSWORD: postgres    # senha
+    ports:
+      - "5432:5432"                  # porta do banco (host:container)
+    volumes:
+      - postgres_data:/var/lib/postgresql/data  # guarda os dados mesmo se desligar
+    healthcheck:                     # so avisa "estou pronto" quando o banco liga
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # ---------- CAIXA 2: APLICACAO SPRING BOOT ----------
+  app:
+    build: .                         # constroi usando o Dockerfile desta pasta
+    container_name: gestao-app
+    depends_on:
+      db:
+        condition: service_healthy   # so sobe DEPOIS que o banco estiver pronto
+    ports:
+      - "8080:8080"                  # porta da aplicacao
+    environment:
+      # Estas variaveis SOBRESCREVEM o application.properties.
+      # Repare que o host do banco e "db" (o nome do servico acima), nao localhost!
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/gestaodb
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+      SPRING_DATASOURCE_DRIVER_CLASS_NAME: org.postgresql.Driver
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      SPRING_JPA_DATABASE_PLATFORM: org.hibernate.dialect.PostgreSQLDialect
+
+# Volume nomeado: e onde o Postgres guarda os dados de verdade
+volumes:
+  postgres_data:

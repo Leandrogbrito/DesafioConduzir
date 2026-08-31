@@ -1,0 +1,34 @@
+COMO LIGAR A TELA DE RECOMENDACAO NO SEU PROJETO REACT
+========================================================
+
+1) Adicione a rota no arquivo src/App.tsx
+
+   Adicione este import no topo:
+
+   import { RecomendacaoPage } from './pages/RecomendacaoPage'
+
+   E dentro de <Routes> (junto das outras rotas), adicione:
+
+   <Route path="recomendacao" element={<RecomendacaoPage />} />
+
+
+2) Adicione o link no menu (src/components/Layout.tsx)
+
+   Onde estao os outros <NavLink>, adicione mais um:
+
+   <NavLink to="/recomendacao" className={({ isActive }) => (isActive ? 'ativo' : '')}>
+     🤖 Recomendação IA
+   </NavLink>
+
+
+3) Pronto! Ao rodar "npm run dev" e clicar no menu
+   "Recomendação IA", a tela nova vai aparecer.
+
+
+-----------------------------------------------------
+RESUMO DOS ARQUIVOS DESTE PACOTE:
+
+src/api/recomendacao.ts        -> arquivo NOVO (chamada a API)
+src/pages/RecomendacaoPage.tsx -> arquivo NOVO (tela)
+App.tsx                        -> EDITAR (adicionar rota)
+Layout.tsx                     -> EDITAR (adicionar link no menu)
