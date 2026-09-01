@@ -1,345 +1,214 @@
-# 🚗 Gestão de Veículos e Concessionárias
+# 🚗 Conduzir - Gestão de Veículos
 
-Aplicação **full stack** para gestão de veículos e concessionárias parceiras de uma montadora, permitindo o cadastro, consulta, alteração e exclusão de registros, com **frontend e backend separados** consumindo **APIs REST**.
+> **"Guiando o seu negócio pelo melhor caminho"**
 
-> Desafio Técnico — Cargo: Desenvolvedor Full Stack
+Sistema Full Stack para **gestão de veículos**, desenvolvido como desafio técnico para a vaga de **Full Stack Developer Júnior** (projeto EcoPartners / cliente Telefónica-Vivo).
 
----
-
-## 📑 Índice
-
-- [Visão Geral](#-visão-geral)
-- [Arquitetura da Solução](#-arquitetura-da-solução)
-- [Tecnologias](#-tecnologias)
-- [Como Executar](#-como-executar)
-- [Endpoints da API](#-endpoints-da-api)
-- [Modelo de Dados](#-modelo-de-dados)
-- [Validações](#-validações)
-- [Diferenciais Implementados](#-diferenciais-implementados)
-- [Decisões Técnicas](#-decisões-técnicas)
-- [Estrutura de Pastas](#-estrutura-de-pastas)
+O projeto foi construído do zero, cobrindo backend, frontend, integração com APIs externas, containerização, documentação de API e deploy em produção na AWS.
 
 ---
 
-## 🎯 Visão Geral
+## 🌐 Aplicação em Produção
 
-O sistema permite:
-
-- ✅ Cadastro, consulta, edição e exclusão de **veículos**;
-- ✅ Cadastro, consulta, edição e exclusão de **concessionárias**;
-- ✅ **Associação** de veículos a concessionárias (um-para-muitos);
-- ✅ **Consulta automática de endereço via ViaCEP** ao informar o CEP;
-- ✅ **Validação de CNPJ** com cálculo dos dígitos verificadores;
-- ✅ Documentação interativa da API com **Swagger/OpenAPI**.
-
----
-
-## 🏛️ Arquitetura da Solução
-
-A aplicação segue uma arquitetura em **camadas (layered architecture)**, com separação clara de responsabilidades entre frontend, backend e banco de dados, comunicando-se via **HTTP/REST (JSON)**.
-
-### Visão macro (Frontend → Backend → Banco)
-
-```mermaid
-flowchart LR
-    subgraph Cliente["🖥️ Frontend (React + TypeScript)"]
-        UI["Telas / Formulários"]
-        RQ["React Query"]
-        ZOD["Zod (validação client-side)"]
-    end
-
-    subgraph Backend["☕ Backend (Spring Boot / Java 21)"]
-        CTRL["Controller\n(recebe HTTP)"]
-        SVC["Service\n(regras de negócio)"]
-        REPO["Repository\n(JPA / Hibernate)"]
-    end
-
-    DB[("🗄️ PostgreSQL / H2")]
-    VIACEP["🌐 API ViaCEP"]
-
-    UI --> RQ
-    RQ -->|"HTTP REST (JSON)"| CTRL
-    CTRL --> SVC
-    SVC --> REPO
-    REPO -->|"SQL"| DB
-    SVC -.->|"consulta CEP"| VIACEP
-```
-
-### Fluxo de uma requisição (ex.: criar veículo)
-
-```mermaid
-sequenceDiagram
-    participant U as 🖥️ Frontend
-    participant C as 🛎️ Controller
-    participant S as 🧠 Service
-    participant R as 📦 Repository
-    participant D as 🗄️ Banco
-
-    U->>C: POST /vehicles (JSON)
-    C->>C: Valida DTO (@Valid)
-    C->>S: criar(dto)
-    S->>S: Aplica regras de negócio
-    S->>R: save(veiculo)
-    R->>D: INSERT INTO veiculos ...
-    D-->>R: id gerado
-    R-->>S: entidade salva
-    S-->>C: VeiculoResponseDTO
-    C-->>U: 201 Created (JSON)
-```
-
-### Camadas do Backend
-
-| Camada | Responsabilidade | Analogia 🍔 |
+| Camada | Link | Status |
 |---|---|---|
-| **Controller** | Recebe requisições HTTP e devolve respostas REST | 🛎️ Garçom |
-| **Service** | Concentra as regras de negócio | 🧠 Chef |
-| **Repository** | Persistência de dados (JPA/Hibernate) | 📦 Despenseiro |
-| **Entity** | Mapeamento objeto-relacional (ORM) | 🏷️ Etiqueta |
-| **DTO** | Transporte de dados entre camadas | 🎁 Marmita |
-| **Mapper** | Conversão DTO ↔ Entity | 🔁 Tradutor |
+| **Frontend (React)** | http://conduzir-frontend.s3-website-us-east-1.amazonaws.com/veiculos | ✅ Online |
+| **Backend (Spring Boot)** | http://desafio-conduzir-env.eba-ipu5dsfz.us-east-1.elasticbeanstalk.com | ✅ Online |
+| **Documentação da API (Swagger)** | http://desafio-conduzir-env.eba-ipu5dsfz.us-east-1.elasticbeanstalk.com/swagger-ui.html | ✅ Disponível |
+
+> ⚠️ **Observação:** tanto o Frontend (S3 Static Website Hosting) quanto o Backend (Elastic Beanstalk sem certificado configurado) respondem apenas via **HTTP** (não HTTPS). Ao acessar, utilize os links exatamente como estão, sem adicionar `https://`. A migração para **HTTPS** (CloudFront no frontend / Load Balancer com certificado no backend) está listada em [Melhorias Futuras](#-melhorias-futuras).
+>
+> 💡 Este é um ambiente de **avaliação técnica/portfólio** e pode ser desativado após o período de análise, para controle de custos na AWS.
+
+### ✅ Validação em Produção
+
+O fluxo completo de **CRUD (Create, Read, Update, Delete)** foi testado diretamente no ambiente publicado (frontend no S3 se comunicando com o backend no Elastic Beanstalk), confirmando que:
+
+- ✅ Listagem de veículos carrega corretamente
+- ✅ Cadastro de novo veículo funciona de ponta a ponta (Frontend → CORS → Backend → Banco de dados)
+- ✅ CORS configurado corretamente entre os domínios do S3 e do Elastic Beanstalk
 
 ---
 
-## 🛠️ Tecnologias
+## 📋 Sobre o Projeto
+
+O **Conduzir** é uma aplicação que permite o cadastro, consulta, atualização e remoção de veículos, com recursos adicionais como:
+
+- ✅ Preenchimento automático de endereço via **API ViaCEP**
+- ✅ Geração de recomendações/resumos inteligentes via **API Gemini (Google AI)**, com fallback local em caso de indisponibilidade do serviço
+- ✅ Documentação interativa da API via **Swagger**
+- ✅ Persistência de dados com **PostgreSQL** (produção) e **H2** (testes locais)
+- ⚠️ `Dockerfile` disponível no repositório (containerização planejada), porém não validado em ambiente local devido a restrição corporativa de acesso ao Docker Desktop (política de TI)
+
+---
+
+## 🛠️ Tecnologias Utilizadas
+
+**Backend**
+- Java 17
+- Spring Boot (Web, Data JPA, Validation)
+- Maven
+- PostgreSQL / H2 Database
+- Swagger / OpenAPI
+- Integração com API Gemini (Google AI) e ViaCEP
+
+**Frontend**
+- React + TypeScript
+- Vite
+- Consumo de API REST via Axios/Fetch
+
+**Infraestrutura / DevOps**
+- Docker (`Dockerfile` incluído no repositório)
+- AWS Elastic Beanstalk (backend)
+- AWS S3 Static Website Hosting (frontend)
+- Git / GitHub
+
+---
+
+## 📁 Estrutura do Projeto
+
+```text
+DesafioConduzir/
+├── gestao-veiculos-backend/
+│   └── desafio/                # Código-fonte do backend (pom.xml aqui)
+│       ├── src/main/java/...
+│       │   ├── controller/
+│       │   ├── service/
+│       │   ├── repository/
+│       │   ├── dto/
+│       │   └── model/
+│       └── src/main/resources/
+│           └── application.properties
+│
+└── conduzir-frontend/
+    └── conduzir-frontend/       # Código-fonte do frontend (package.json aqui)
+        ├── src/
+        │   ├── components/
+        │   ├── pages/
+        │   └── services/
+        └── public/
+```
+
+---
+
+## ▶️ Como Executar Localmente
+
+### Pré-requisitos
+- Java 17+
+- Node.js 18+
+- Maven
+- Git
 
 ### Backend
-- **Java 21**
-- **Spring Boot 3.3**
-- **Spring Data JPA / Hibernate**
-- **Bean Validation** (Jakarta Validation)
-- **Maven**
-- **PostgreSQL** (produção/Docker) e **H2** (execução local rápida)
-- **springdoc-openapi** (Swagger UI)
-- **Lombok**
-- **JUnit 5 + Mockito** (testes)
-
-### Frontend *(a implementar)*
-- **React + TypeScript + Vite**
-- **TanStack Query (React Query)**, **React Hook Form**, **Zod**, **React Router**
-
-### Infraestrutura
-- **Docker** (multi-stage build)
-- **Docker Compose** (orquestração app + banco)
-
----
-
-## 🚀 Como Executar
-
-### Opção 1 — Com Docker (recomendado) 🐳
-
-Suba a aplicação **e** o banco PostgreSQL com um único comando:
 
 ```bash
-docker compose up --build
-```
-
-- API: `http://localhost:8080`
-- Swagger: `http://localhost:8080/swagger-ui.html`
-
-Para parar:
-
-```bash
-docker compose down
-```
-
-### Opção 2 — Local com Maven (banco H2 em memória) ☕
-
-Requisitos: **Java 21** e **Maven**.
-
-```bash
+cd gestao-veiculos-backend/desafio
 mvn spring-boot:run
 ```
 
-- API: `http://localhost:8080`
-- Swagger: `http://localhost:8080/swagger-ui.html`
-- Console do H2: `http://localhost:8080/h2-console`
-  - JDBC URL: `jdbc:h2:mem:gestaodb` — usuário: `sa` — senha: *(vazia)*
+A API sobe por padrão em:
+```text
+http://localhost:8080
+```
 
-### Rodar os testes
+Documentação Swagger disponível em:
+```text
+http://localhost:8080/swagger-ui.html
+```
+
+### Frontend
 
 ```bash
-mvn test
+cd conduzir-frontend/conduzir-frontend
+npm install
+npm run dev
 ```
 
-Após rodar, o relatório de **cobertura de testes (JaCoCo)** fica em:
-`target/site/jacoco/index.html`
+A aplicação sobe por padrão em:
+```text
+http://localhost:5173
+```
 
-**Suíte de testes incluída:**
+---
 
-| Tipo | Arquivo | O que valida |
+## 🐞 Desafios Técnicos e Erros Corrigidos Durante o Desenvolvimento
+
+Um dos objetivos deste desafio, além de "fazer funcionar", foi **entender profundamente o código** e ser capaz de identificar e corrigir problemas reais — simulando o dia a dia de um desenvolvedor júnior em produção. Abaixo está o histórico dos principais problemas enfrentados e como foram resolvidos:
+
+### 1. Falha na integração com a API Gemini (503 Service Unavailable)
+- **Sintoma:** logs do backend indicavam `Falha ao consultar Gemini, usando resumo local. Motivo: 503 Service Unavailable`.
+- **Causa:** instabilidade/indisponibilidade temporária do serviço externo da Google AI.
+- **Solução:** implementado tratamento de exceção no `RecomendacaoService`, garantindo que, quando a API Gemini falha, o sistema **não quebra** — ele automaticamente gera um resumo local como fallback, mantendo a aplicação funcional (resiliência a falhas externas).
+
+### 2. Erro 502 Bad Gateway no deploy do backend (AWS Elastic Beanstalk)
+- **Sintoma:** ao acessar a URL do backend publicado, a aplicação retornava `502 Bad Gateway`.
+- **Causa:** comum em deploys do Elastic Beanstalk logo após o upload do `.jar`, geralmente por tempo de inicialização da aplicação, porta incorreta configurada, ou variáveis de ambiente ausentes.
+- **Solução:** revisão dos logs do ambiente no console do Elastic Beanstalk, validação da porta (`8080`) exposta pela aplicação Spring Boot e reconfiguração das variáveis de ambiente necessárias para conexão com o banco de dados.
+
+### 3. Frontend publicado exibindo tela em branco / arquivo incorreto
+- **Sintoma:** dúvida se o arquivo gerado pelo build (`index.html`) estava correto, chegando a ser confundido com um "documento de erro".
+- **Causa:** o `index.html` gerado pelo Vite (`dist/index.html`) é o próprio ponto de entrada da aplicação React — não um arquivo de erro.
+- **Solução:** esclarecido o papel do `index.html` dentro da pasta `dist/`, e garantido que o upload para o S3 fosse feito a partir do **conteúdo da pasta `dist`**, e não da raiz do projeto.
+
+### 4. Site acessível via HTTP, mas não via HTTPS
+- **Sintoma:** o link do frontend não abria em alguns dispositivos móveis, mas funcionava normalmente em navegador desktop (modo anônimo).
+- **Causa:** o **Amazon S3 Static Website Hosting** não fornece certificado SSL — ele só responde em `http://`. Ao tentar acessar com `https://`, o navegador não encontra um certificado válido e bloqueia o acesso.
+- **Solução (aplicada):** identificado que removendo o `s` de `https://` o site funciona normalmente.
+- **Solução definitiva (planejada):** configurar **Amazon CloudFront** na frente do bucket S3 para habilitar HTTPS de forma nativa (ver [Melhorias Futuras](#-melhorias-futuras)).
+
+### 5. Dúvida sobre a versão da política do bucket S3 (`"Version": "2012-10-17"`)
+- **Contexto:** ao configurar a *bucket policy* para tornar o site público, surgiu a dúvida sobre o campo `"Version": "2012-10-17"`.
+- **Esclarecimento:** trata-se da **versão da linguagem de política da AWS IAM** (não uma data do projeto) — é o valor padrão e obrigatório utilizado pela AWS desde 2012 para o schema de policies, e deve ser mantido inalterado.
+
+### 6. Logo/imagem não aparecendo após o deploy do frontend
+- **Sintoma:** após publicar a nova versão no S3, a logo do sistema não era exibida.
+- **Causa:** cache do navegador servindo a versão anterior do `index.html`/assets, e/ou arquivo de imagem não incluído no upload mais recente.
+- **Solução:** novo upload garantindo a inclusão de todos os assets estáticos (`dist/assets`) e limpeza de cache no navegador para validar a atualização.
+
+### 7. Organização do repositório Git antes da entrega
+- **Sintoma:** necessidade de remover arquivos sensíveis/desnecessários (builds, dependências, configs locais) do repositório antes da entrega final.
+- **Causa:** arquivos como `node_modules/`, `target/` e configurações locais haviam sido versionados por engano.
+- **Solução:** limpeza do repositório com `.gitignore` adequado, remoção dos arquivos do rastreamento do Git (mantendo-os localmente) e novo commit/push com o histórico organizado.
+
+### 8. Restrição corporativa de acesso ao Docker Desktop
+- **Sintoma:** não foi possível executar/validar o `Dockerfile` localmente.
+- **Causa:** a máquina de trabalho é corporativa (Accenture) e possui **BeyondTrust** bloqueando a instalação/execução do Docker Desktop, por política interna de segurança de TI.
+- **Solução adotada:** o `Dockerfile` foi mantido no repositório (documentando a intenção de containerização e servindo de referência técnica), enquanto a execução do projeto localmente segue via **Maven** (backend) e **NPM** (frontend), conforme instruções da seção [Como Executar Localmente](#️-como-executar-localmente). O deploy em produção não depende de Docker, sendo feito diretamente via **Elastic Beanstalk** (backend, a partir do `.jar`) e **S3** (frontend, a partir do build estático).
+- **Aprendizado:** situação real de ambiente corporativo, onde é preciso adaptar o fluxo de desenvolvimento a restrições de infraestrutura sem comprometer a entrega do projeto.
+
+### 9. Erros de build do frontend (TypeScript + Vite)
+- **Sintoma:** validação do processo `tsc -b && vite build` antes do deploy.
+- **Solução:** build validado localmente com sucesso, gerando os artefatos finais (`dist/index.html`, `assets/*.css`, `assets/*.js`) prontos para publicação no S3.
+
+---
+
+## 🚀 Deploy em Produção (AWS)
+
+| Etapa | Serviço utilizado | Link |
 |---|---|---|
-| Unitário (Service) | `VeiculoServiceTest` | Regras de criação e erro 404 |
-| Unitário (Service) | `ConcessionariaServiceTest` | CNPJ duplicado + preenchimento ViaCEP |
-| Unitário (Validação) | `CnpjValidatorTest` | Cálculo dos dígitos verificadores |
-| Integração (Web) | `VeiculoControllerTest` | Status HTTP 200/201/400/404 via MockMvc |
-| Integração (Repositório) | `VeiculoRepositoryTest` | Consultas JPA em banco H2 real |
-
-### Deploy na AWS ☁️
-
-Guia completo (Elastic Beanstalk, ECS Fargate, RDS, S3/CloudFront e CI/CD) em:
-**[`aws/DEPLOY-AWS.md`](aws/DEPLOY-AWS.md)**
+| Backend (API Spring Boot) | AWS Elastic Beanstalk | http://desafio-conduzir-env.eba-ipu5dsfz.us-east-1.elasticbeanstalk.com |
+| Frontend (React build) | AWS S3 - Static Website Hosting | http://conduzir-frontend.s3-website-us-east-1.amazonaws.com/veiculos |
+| Versionamento | GitHub | — |
 
 ---
 
-## 🔌 Endpoints da API
+## 🔭 Melhorias Futuras
 
-### Veículos
-
-| Método | Endpoint | Descrição |
-|---|---|---|
-| `GET` | `/vehicles` | Lista todos os veículos |
-| `GET` | `/vehicles/{id}` | Busca um veículo pelo id |
-| `POST` | `/vehicles` | Cria um novo veículo |
-| `PUT` | `/vehicles/{id}` | Atualiza um veículo |
-| `DELETE` | `/vehicles/{id}` | Exclui um veículo |
-| `PATCH` | `/vehicles/{id}/dealer/{dealerId}` | Associa/troca a concessionária do veículo |
-
-### Concessionárias
-
-| Método | Endpoint | Descrição |
-|---|---|---|
-| `GET` | `/dealer` | Lista todas as concessionárias |
-| `GET` | `/dealer/{id}` | Busca uma concessionária pelo id |
-| `POST` | `/dealer` | Cria concessionária (busca endereço no ViaCEP se enviar o CEP) |
-| `PUT` | `/dealer/{id}` | Atualiza uma concessionária |
-| `DELETE` | `/dealer/{id}` | Exclui uma concessionária |
-| `GET` | `/dealer/{id}/vehicles` | Lista os veículos de uma concessionária |
-
-### CEP (ViaCEP)
-
-| Método | Endpoint | Descrição |
-|---|---|---|
-| `GET` | `/cep/{cep}` | Retorna o endereço de um CEP |
-
-### Exemplo de requisição
-
-```http
-POST /dealer
-Content-Type: application/json
-
-{
-  "razaoSocial": "Auto Center JP",
-  "cnpj": "11.222.333/0001-81",
-  "cep": "58400-000"
-}
-```
-
-> O endereço (logradouro, bairro, cidade, estado) é preenchido **automaticamente** pelo ViaCEP.
+- [ ] Configurar **Amazon CloudFront** para servir o frontend via **HTTPS**
+- [ ] Domínio próprio (ex: `conduzir.app.br`)
+- [ ] Pipeline de CI/CD (GitHub Actions) para deploy automatizado
+- [ ] Testes automatizados (JUnit no backend / Jest no frontend)
+- [ ] Monitoramento e logs centralizados (CloudWatch)
 
 ---
 
-## 🗃️ Modelo de Dados
+## 👨‍💻 Autor
 
-```mermaid
-erDiagram
-    CONCESSIONARIA ||--o{ VEICULO : possui
-
-    CONCESSIONARIA {
-        Long id PK
-        String razaoSocial
-        String cnpj "único"
-        String cep
-        String logradouro
-        String bairro
-        String cidade
-        String estado
-    }
-
-    VEICULO {
-        Long id PK
-        String marca
-        String modelo
-        TipoCombustivel combustivel "enum"
-        String cor
-        Integer ano "opcional"
-        String chassi "opcional"
-        BigDecimal valor "opcional"
-        String corExterna "opcional"
-        Long concessionaria_id FK
-    }
-```
-
-Relacionamento **um-para-muitos**: uma concessionária possui vários veículos; cada veículo pertence a, no máximo, uma concessionária.
+**Leandro Gomes de Brito**
+Custom Software Engineering Associate @ Accenture (AABG)
 
 ---
 
-## ✅ Validações
-
-- **Campos obrigatórios**: `@NotBlank` / `@NotNull` nos DTOs de entrada;
-- **CNPJ válido**: anotação personalizada `@CNPJ` com cálculo dos dígitos verificadores (módulo 11);
-- **CEP válido**: verificado no `ViaCepService` (8 dígitos + retorno do ViaCEP);
-- **Enum de combustível**: `GASOLINA`, `ETANOL`, `FLEX`, `DIESEL`, `ELETRICO`, `HIBRIDO`;
-- **CNPJ único**: regra de negócio impede cadastro duplicado.
-
-Erros são tratados de forma centralizada por um `@RestControllerAdvice`, retornando respostas JSON padronizadas (400, 404).
-
----
-
-## ⭐ Diferenciais Implementados
-
-- [x] **Integração ViaCEP** — preenchimento automático de endereço;
-- [x] **Validação de CNPJ** com dígitos verificadores;
-- [x] **Swagger / OpenAPI** — documentação interativa;
-- [x] **Docker + Docker Compose** — containerização de app e banco;
-- [x] **Testes unitários** — JUnit 5 + Mockito;
-- [x] **Tratamento global de exceções** — respostas de erro padronizadas;
-- [x] **Logs estruturados** — via SLF4J.
-
-- [x] **Deploy em AWS** — ECS Fargate + RDS + S3/CloudFront (ver `aws/DEPLOY-AWS.md`);
-- [x] **CI/CD** — pipeline no GitHub Actions (`.github/workflows/ci-cd.yml`);
-- [x] **Cobertura de testes** — relatório JaCoCo;
-- [x] **Health check** — Spring Boot Actuator (`/actuator/health`).
-
-### Próximos diferenciais (roadmap)
-- [ ] Observabilidade avançada (logs estruturados JSON, métricas Prometheus);
-- [ ] Testes E2E do frontend (Playwright/Cypress).
-
----
-
-## 🧠 Decisões Técnicas
-
-1. **Arquitetura em camadas + SOLID**: separação Controller/Service/Repository para baixo acoplamento e alta coesão, facilitando testes e manutenção.
-2. **DTOs + Mapper**: as entidades JPA nunca são expostas diretamente na API, evitando vazamento de detalhes internos e problemas de serialização (lazy loading).
-3. **`record` para DTOs**: imutabilidade e menos código boilerplate.
-4. **Validação em duas camadas**: client-side (Zod, no frontend) e server-side (Bean Validation), garantindo dupla proteção.
-5. **H2 para desenvolvimento, PostgreSQL para produção**: agilidade local sem abrir mão de um banco robusto no deploy.
-6. **Docker multi-stage**: imagem final enxuta (apenas JRE + `.jar`), acelerando o deploy.
-7. **Configuração externalizada**: credenciais e URLs injetadas por variáveis de ambiente (12-factor app).
-
----
-
-## 📂 Estrutura de Pastas
-
-```
-desafio/
-├── Dockerfile
-├── docker-compose.yml
-├── pom.xml
-├── README.md
-└── src
-    ├── main
-    │   ├── java/com/montadora/gestao
-    │   │   ├── config/          # Configuração (RestClient do ViaCEP)
-    │   │   ├── controller/      # Camada REST (Veículo, Concessionária, CEP)
-    │   │   ├── dto/             # Objetos de transporte (Request/Response)
-    │   │   ├── entity/          # Entidades JPA
-    │   │   ├── enums/           # TipoCombustivel
-    │   │   ├── exception/       # Tratamento global de erros
-    │   │   ├── mapper/          # Conversão DTO ↔ Entity
-    │   │   ├── repository/      # Camada de persistência (JPA)
-    │   │   ├── service/         # Regras de negócio
-    │   │   └── validation/      # Validação personalizada de CNPJ
-    │   └── resources
-    │       └── application.properties
-    └── test
-        └── java/com/montadora/gestao/service
-            └── VeiculoServiceTest.java
-```
-
----
-
-## 👤 Autor
-
-**Leandro Gomes de Brito** — Custom Software Engineering Associate
+## 📄 Licença
 
 Desenvolvido como parte do Desafio Técnico de Desenvolvedor Full Stack.
